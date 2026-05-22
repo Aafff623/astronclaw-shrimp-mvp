@@ -1,0 +1,248 @@
+# AstronClaw Skill: weekly-digest
+# ─────────────────────────────────────────────────────────────
+# 学术周报自动化 Agent — 多源抓取 → AI 排序排版 → 多渠道推送
+#
+# ⚠️ Schema 字段以 AstronClaw v1 草案为参考；正式部署前请对照
+#    讯飞官方 SDK / SkillHub 模板文档校准字段名与执行语义。
+# ─────────────────────────────────────────────────────────────
+
+name: weekly-digest
+version: 0.1.0
+description: |
+  每周自动抓取 arXiv / GitHub Trending / Twitter 列表的最新内容，
+  AI 排序 + 中文摘要 + 封面图生成 + 推送到飞书、企业微信、Notion。
+  典型用户：AI × Web3 方向的研究者 / 开发者 / 学生。
+
+metadata:
+  author: Aafff623
+  license: MIT
+  category: productivity
+  hackathon: AstronClaw 养虾挑战赛 2026
+  tags:
+    - academic
+    - weekly-digest
+    - rpa
+    - multi-channel-push
+    - cloud-edge
+
+# ─────────── 触发器：每周五 09:00 北京时间 ───────────
+trigger:
+  type: schedule
+  cron: "0 9 * * 5"
+  timezone: Asia/Shanghai
+
+# ─────────── 输入参数（运行时可覆盖默认值）───────────
+inputs:
+  sources:
+    type: array
+    description: 订阅源列表
+    default:
+      - { kind: arxiv,           category: cs.AI,     days: 7 }
+      - { kind: arxiv,           category: cs.CL,     days: 7 }
+      - { kind: github_trending, language: python,    days: 7 }
+      - { kind: github_trending, language: solidity,  days: 7 }
+  top_n:
+    type: int
+    description: 周报展示条数
+    default: 10
+  theme:
+    type: string
+    description: 主题关键词，用于 LLM 排序时的相关性判定
+    default: "AI Agent × Web3 × 自动化执行"
+
+# ─────────── 必需环境变量（部署前在控制台填入）───────────
+env_required:
+  - ASTRONCLAW_API_KEY
+  - ASTRONCLAW_DEFAULT_LLM     # 推荐用讯飞星火 X1 / Spark Lite
+  - FEISHU_WEBHOOK_URL
+  - WECHAT_WORK_WEBHOOK_URL
+  - NOTION_API_KEY
+  - NOTION_DATABASE_ID
+
+# ─────────── 沙箱网络白名单（合规要求）───────────
+security:
+  sandbox: true
+  network_allowlist:
+    - export.arxiv.org
+    - api.github.com
+    - api.notion.com
+    - "*.feishu.cn"
+    - qyapi.weixin.qq.com
+
+# ─────────── 流水线步骤 ───────────
+steps:
+
+  # 1️⃣ 并行抓取所有订阅源
+  - id: fetch
+    name: 抓取原始素材
+    type: parallel
+    for_each: ${inputs.sources}
+    actions:
+      - type: http
+        when: ${item.kind == 'arxiv'}
+        method: GET
+        url: "https://export.arxiv.org/api/query?search_query=cat:${item.category}&max_results=50&sortBy=submittedDate&sortOrder=descending"
+        parse: atom
+
+      - type: http
+        when: ${item.kind == 'github_trending'}
+        method: GET
+        url: "https://api.github.com/search/repositories?q=language:${item.language}+created:>${date.sub(item.days)}&sort=stars&order=desc&per_page=30"
+        parse: json
+    output: raw_items
+
+  # 2️⃣ LLM 排序 + 中文摘要 + 关键洞察
+  - id: rank
+    name: AI 排序与摘要
+    type: llm
+    model: ${env.ASTRONCLAW_DEFAULT_LLM}
+    temperature: 0.3
+    prompt: |
+      你是一位 AI × Web3 方向的资深学术周报编辑。
+
+      任务：
+      1. 评估下列原始条目与「${inputs.theme}」的相关度（0-1 分）
+      2. 取相关度最高的 ${inputs.top_n} 条
+      3. 每条用中文写：
+         - 100 字以内摘要（保留专业术语英文）
+         - 3 条关键洞察（用编号列表）
+      4. 输出严格 JSON
+
+      原始素材：
+      ${steps.fetch.output}
+    output_format: json_schema
+    schema:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [title, url, summary, insights, relevance]
+            properties:
+              title:      { type: string }
+              url:        { type: string, format: uri }
+              summary:    { type: string }
+              insights:   { type: array, items: { type: string } }
+              relevance:  { type: number, minimum: 0, maximum: 1 }
+    output: ranked
+
+  # 3️⃣ 多模态：生成本期封面图（差异化加分项）
+  - id: cover
+    name: 生成周报封面图
+    type: multimodal
+    action: image_generate
+    prompt: |
+      Minimalist weekly digest cover for week ${date.iso_week()}.
+      Abstract data-stream visualization, cosmic purple + electric blue,
+      dark theme. No text, premium tech aesthetic. 16:9.
+    aspect_ratio: "16:9"
+    output: cover_url
+
+  # 4️⃣ 模板渲染：组装 Markdown 周报
+  - id: render
+    name: 渲染 Markdown 周报
+    type: template
+    engine: handlebars
+    template: |
+      # 第 {{date.iso_week}} 周 · AI × Web3 周报
+
+      ![cover]({{steps.cover.output}})
+
+      > 自动生成于 {{date.now}} · 共 {{steps.rank.output.items.length}} 条精选
+
+      {{#each steps.rank.output.items}}
+      ## {{@index_1}}. {{title}}
+
+      {{summary}}
+
+      **关键洞察：**
+      {{#each insights}}
+      {{@index_1}}. {{this}}
+      {{/each}}
+
+      🔗 [原文链接]({{url}}) · 相关度 {{relevance}}
+
+      ---
+      {{/each}}
+
+      <sub>本周报由 [AstronClaw Shrimp MVP](https://github.com/Aafff623/astronclaw-shrimp-mvp) 自动生成</sub>
+    output: markdown_content
+
+  # 5️⃣ 并行推送三渠道
+  - id: push
+    name: 多渠道推送
+    type: parallel
+    actions:
+
+      # 飞书：交互卡片
+      - id: push_feishu
+        type: http
+        method: POST
+        url: ${env.FEISHU_WEBHOOK_URL}
+        headers: { Content-Type: application/json }
+        body:
+          msg_type: interactive
+          card:
+            header:
+              title: { tag: plain_text, content: "📚 第 ${date.iso_week()} 周 · AI × Web3 周报" }
+              template: blue
+            elements:
+              - tag: markdown
+                content: ${steps.render.output}
+
+      # 企业微信：markdown
+      - id: push_wecom
+        type: http
+        method: POST
+        url: ${env.WECHAT_WORK_WEBHOOK_URL}
+        headers: { Content-Type: application/json }
+        body:
+          msgtype: markdown
+          markdown: { content: ${steps.render.output} }
+
+      # Notion：写入数据库
+      - id: push_notion
+        type: http
+        method: POST
+        url: https://api.notion.com/v1/pages
+        headers:
+          Authorization: "Bearer ${env.NOTION_API_KEY}"
+          Notion-Version: "2022-06-28"
+          Content-Type: application/json
+        body:
+          parent: { database_id: ${env.NOTION_DATABASE_ID} }
+          properties:
+            Name:
+              title:
+                - text: { content: "第 ${date.iso_week()} 周 · AI × Web3 周报" }
+            Week:    { number: ${date.iso_week()} }
+            Date:    { date: { start: ${date.now} } }
+            Items:   { number: ${steps.rank.output.items.length} }
+          children:
+            - object: block
+              type: markdown
+              markdown: { content: ${steps.render.output} }
+
+# ─────────── 输出 ───────────
+outputs:
+  digest_summary: ${steps.render.output}
+  total_items:    ${steps.rank.output.items.length}
+  notion_url:     ${steps.push.actions.push_notion.response.url}
+
+# ─────────── 失败重试 ───────────
+retry:
+  max_attempts: 3
+  backoff:      exponential
+  retry_on:     [http_5xx, timeout]
+
+# ─────────── 通知（失败时告警）───────────
+on_failure:
+  type: http
+  method: POST
+  url: ${env.FEISHU_WEBHOOK_URL}
+  body:
+    msg_type: text
+    content:
+      text: "⚠️ weekly-digest Skill 执行失败 — ${error.message}"

@@ -22,6 +22,7 @@
   <a href="#-progress-进程">Progress</a> ·
   <a href="#-repo-structure-仓库结构">Repo-Structure</a> ·
   <a href="#️-workflow-工作流">Workflow</a> ·
+  <a href="#-multi-agent-多-agent-协作">Multi-Agent</a> ·
   <a href="#-skills-技能清单">Skills</a> ·
   <a href="#-hackathon-参赛信息">Hackathon</a> ·
   <a href="#️-roadmap-规划">Roadmap</a> ·
@@ -116,23 +117,35 @@ gantt
 ```text
 astronclaw-shrimp-mvp/
 ├── README.md                  # 项目首页（你正在看的）
+├── GUIDE.md                   # 公共规范（多 Agent 共用）
+├── CLAUDE.md                  # Claude Code 入口
+├── steering.md                # Kiro 入口（与 CLAUDE.md 主体对称）
 ├── deploy.md                  # AstronClaw 一键部署教程
 ├── .env.example               # 环境变量样例
 ├── .gitignore                 # Git 忽略规则
 ├── LICENSE                    # MIT 开源协议
 ├── assets/
-│   └── banner.png             # README Banner 图
+│   └── banner.png             # README Banner 图（GPT-Image-2 生成）
 ├── docs/
 │   ├── 技术报告.md             # 详细实现思路与技术栈
 │   ├── 演示视频.md             # 视频外链
+│   ├── design-thinking.md     # 设计思想总结（设计判断的"为什么"）
 │   └── 效果截图/               # 静态截图
+├── memory/                    # 项目协作记忆（决策 / 判断 / 偏好）
+│   ├── MEMORY.md              # 索引
+│   ├── user_*.md              # 参赛者画像
+│   ├── project_*.md           # 项目决策
+│   ├── feedback_*.md          # 设计判断与偏好
+│   └── reference_*.md         # 外部参考
 ├── skills/                    # AstronClaw Skill 配置（.yaml / .json）
 │   └── weekly-digest.yaml     # 学术周报自动化 Skill（首个 MVP）
 ├── screenshots/               # 演示 GIF 与运行截图
-└── .claude/
-    └── skills/                # Claude Code 工作流 skill
-        ├── git-commit-guide/  # Git 提交规范
-        └── cascade-maintain/  # 索引联动维护
+├── .claude/skills/            # Claude Code 工作流 skill
+│   ├── git-commit-guide/      # Git 提交规范
+│   └── cascade-maintain/      # 索引联动维护（7 条链路）
+└── .kiro/skills/              # Kiro 工作流 skill（与 .claude/skills 字节级镜像）
+    ├── git-commit-guide/
+    └── cascade-maintain/
 ```
 
 <details>
@@ -185,6 +198,58 @@ flowchart LR
 ### 一键部署
 
 详细 7 步教程见 [`deploy.md`](./deploy.md)。
+
+---
+
+## 🤝 Multi-Agent (多 Agent 协作)
+
+> 本项目同时支持 **Claude Code** 与 **Kiro** 双 Agent 协作，规范文件与 Skill 完全对称。
+
+### 三层规范架构
+
+```mermaid
+flowchart TD
+    G["GUIDE.md<br/>公共规范<br/>(所有 Agent 都读)"]:::common
+    C["CLAUDE.md<br/>Claude Code 入口"]:::claude
+    S["steering.md<br/>Kiro 入口"]:::kiro
+    M["memory/<br/>项目协作记忆"]:::memory
+
+    G --> C
+    G --> S
+    C -.主体对称.-> S
+    C --> M
+    S --> M
+
+    classDef common fill:#6C3CE1,stroke:#5B2FD1,color:#fff
+    classDef claude fill:#3B82F6,stroke:#2563EB,color:#fff
+    classDef kiro fill:#F59E0B,stroke:#D97706,color:#000
+    classDef memory fill:#10B981,stroke:#059669,color:#fff
+```
+
+- **GUIDE.md** —— 仓库结构 / Git 规则 / 内容风格 / 禁止事项（公共）
+- **CLAUDE.md** —— Claude Code 入口，引用 GUIDE + 核心目标 + 阶段 + 决策 + 行为约定
+- **steering.md** —— Kiro 入口，与 CLAUDE.md 主体对称，差异仅在最后的"行为约定"节
+
+### Skill 双套同步
+
+```
+.claude/skills/<name>/SKILL.md   ←  byte-level 一致  →   .kiro/skills/<name>/SKILL.md
+```
+
+任何 Skill 改动必须同步两边，由 [`cascade-maintain`](./.claude/skills/cascade-maintain/SKILL.md) 链路 F 自检。
+
+### Memory 系统
+
+`memory/` 沉淀设计判断、用户偏好、外部参考，让重要决策不只活在 git log 里：
+
+| 类型 | 用途 | 示例 |
+|------|------|------|
+| `user_*` | 参赛者画像、协作偏好 | `user_participant_profile.md` |
+| `project_*` | 项目决策 | `project_skill_direction.md` |
+| `feedback_*` | 设计判断与风格偏好 | `feedback_banner_decision.md` |
+| `reference_*` | 外部资源链接 | `reference_astronclaw.md` |
+
+完整设计思想总结见 [`docs/design-thinking.md`](./docs/design-thinking.md)。
 
 ---
 
@@ -251,7 +316,9 @@ flowchart LR
 | 📱 部署二维码 | `screenshots/deploy_qrcode.png` |
 | 🦞 SkillHub Skill | _待填写_ |
 | 📖 技术报告 | [`docs/技术报告.md`](./docs/技术报告.md) |
+| 🧠 设计思想 | [`docs/design-thinking.md`](./docs/design-thinking.md) |
 | 🛠️ 部署教程 | [`deploy.md`](./deploy.md) |
+| 📐 公共规范 | [`GUIDE.md`](./GUIDE.md) |
 | 🏛️ 官方比赛 | [challenge.xfyun.cn](https://challenge.xfyun.cn) |
 | 👨‍💻 开发者社区 | [developer.xfyun.cn](https://developer.xfyun.cn/) |
 

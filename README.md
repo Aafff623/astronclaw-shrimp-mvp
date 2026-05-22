@@ -34,14 +34,18 @@
 
 ## ✨ Highlights (亮点聚焦)
 
-> 让 AI Agent 从「对话」走向真实「执行」—— 一分钟部署，沙箱安全，多模态交互。
+> 围绕 Agent 设计五要素 **`Agentic Systems · Tool Use · Memory · Deployment · Observability`**
+> 构建完整闭环 —— AI 不止「会说」，更要**能做、能记、能改**。
 
-- 🦞 **基于讯飞 AstronClaw** —— 端云一体 AI Agent 平台，软硬一体架构
-- ⚡ **零代码/低代码 Skill** —— YAML/JSON 声明式配置，无需 Docker/Node 环境
-- 🛡️ **沙箱隔离运行** —— 符合国家信息安全三级认证
-- 🌐 **多模态交互** —— 支持语音、视觉、RPA 执行
-- 🚀 **一键部署** —— 浏览器直接访问，1 分钟上线
-- 🤝 **SkillHub 公开发布** —— 接受社区收藏、下载、评价
+| 维度 | weekly-digest 的实现 |
+|------|----------------------|
+| 🦞 **Agentic Systems** | 5 步流水线全自动：定时触发 → 多源抓取 → AI 排序 → 多模态产出 → 多渠道分发 |
+| 🛠️ **Tool Use** | 单 Skill 内并发调用 4 类外部 API：arXiv + GitHub + 飞书/企微 + Notion |
+| 🧠 **Memory** | 周报写入 Notion 数据库 → Agent 读过的内容成为下一期排序输入，复利式优化 |
+| 🚀 **Deployment** | AstronClaw 原生 cron + SkillHub 一键发布，沙箱隔离，1 分钟上线 |
+| 📊 **Observability** | 指数退避重试 3 次 + 步骤级日志 + 失败时飞书告警，生产级可靠性 |
+
+> 📦 **平台底座**：讯飞 AstronClaw 端云一体 Agent 平台 · 零代码 YAML · 国家信息安全三级认证沙箱 · 多模态原生支持
 
 ---
 

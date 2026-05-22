@@ -4,7 +4,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/banner.png" alt="AstronClaw Shrimp MVP Banner" width="100%">
+  <img src="assets/banner.svg" alt="AstronClaw Shrimp MVP Banner" width="100%">
 </p>
 
 <p align="center">
@@ -22,6 +22,7 @@
   <a href="#-progress-进程">Progress</a> ·
   <a href="#-repo-structure-仓库结构">Repo-Structure</a> ·
   <a href="#️-workflow-工作流">Workflow</a> ·
+  <a href="#-skills-技能清单">Skills</a> ·
   <a href="#-hackathon-参赛信息">Hackathon</a> ·
   <a href="#️-roadmap-规划">Roadmap</a> ·
   <a href="#-link-关键链接">Link</a> ·
@@ -95,11 +96,11 @@ gantt
     GitHub 完善 + 提交   :         p7, after p5, 2d
 ```
 
-| 阶段 | 状态 | 备注 |
+| 📊 阶段 | 状态 | 备注 |
 |:----:|:----:|------|
 | 仓库骨架 | ✅ 完成 | README / docs / skills / LICENSE |
-| Skill 设计 | 🟡 进行中 | git-commit-guide / cascade-maintain 已就位 |
-| Skill 配置开发 | ⚪ 未开始 | 方向待定 |
+| Skill 设计 | ✅ 完成 | git-commit-guide / cascade-maintain 已就位 |
+| Skill 配置开发 | 🟡 进行中 | `weekly-digest.yaml` 已落地，待沙箱跑通 |
 | 部署调试 | ⚪ 未开始 | — |
 | 演示资料 | ⚪ 未开始 | 视频 + GIF + 截图 |
 | SkillHub 发布 | ⚪ 未开始 | — |
@@ -122,6 +123,7 @@ astronclaw-shrimp-mvp/
 │   ├── 演示视频.md             # 视频外链
 │   └── 效果截图/               # 静态截图
 ├── skills/                    # AstronClaw Skill 配置（.yaml / .json）
+│   └── weekly-digest.yaml     # 学术周报自动化 Skill（首个 MVP）
 ├── screenshots/               # 演示 GIF 与运行截图
 └── .claude/
     └── skills/                # Claude Code 工作流 skill
@@ -182,6 +184,35 @@ flowchart LR
 
 ---
 
+## 🦞 Skills (技能清单)
+
+| Skill | 版本 | 状态 | 文件 | 说明 |
+|---|:---:|:---:|---|---|
+| **weekly-digest** | 0.1.0 | 🟡 调试中 | [`skills/weekly-digest.yaml`](./skills/weekly-digest.yaml) | 每周自动抓取 arXiv + GitHub Trending → AI 排序排版 → 飞书 / 企微 / Notion 推送 |
+
+### weekly-digest 流水线（首个落地 Skill）
+
+```mermaid
+flowchart LR
+    A["定时触发<br/>每周五 9:00"]:::start
+    B["并行抓取<br/>arXiv + GitHub"]:::skill
+    C["LLM 排序<br/>+ 中文摘要"]:::skill
+    D["多模态<br/>封面图生成"]:::skill
+    E["模板渲染<br/>Markdown 周报"]:::skill
+    F["并行推送<br/>飞书 / 企微 / Notion"]:::done
+
+    A --> B --> C --> D --> E --> F
+
+    classDef start fill:#6C3CE1,stroke:#5B2FD1,color:#fff
+    classDef skill fill:#F59E0B,stroke:#D97706,color:#000
+    classDef done fill:#10B981,stroke:#059669,color:#fff
+```
+
+**为什么是这个方向**：把 AstronClaw 的「**调度 + 多模态 + 沙箱执行 + 多渠道 RPA**」全部卖点串成闭环，
+比单纯的"AI 问答 Demo"更能体现端云一体 Agent 平台价值。
+
+---
+
 ## 🏆 Hackathon 参赛信息
 
 | 项目 | 内容 |
@@ -200,10 +231,10 @@ flowchart LR
 ## 🗺️ Roadmap (规划)
 
 - [x] **v0.0** — 仓库骨架 + Skill 规范（git-commit / cascade-maintain）
-- [ ] **v0.1** — 首个 Skill 配置 + 沙箱跑通
-- [ ] **v0.2** — 多模态交互入口（语音 / RPA）
-- [ ] **v0.3** — 飞书 / 企业微信推送渠道
-- [ ] **v1.0** — SkillHub 公开发布 + 演示视频 + 提交参赛
+- [x] **v0.1** — 首个 Skill `weekly-digest` 配置完成（学术周报闭环）
+- [ ] **v0.2** — `weekly-digest` 沙箱跑通 + 飞书首次真实推送
+- [ ] **v0.3** — 录制演示视频 + 补充封面图 multimodal 调优
+- [ ] **v1.0** — SkillHub 公开发布 + 演示视频上线 + 提交参赛
 
 ---
 

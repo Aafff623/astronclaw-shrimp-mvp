@@ -30,7 +30,13 @@
 ### 步骤 3：导入 Skill 配置
 - 进入 Skill 编辑器
 - 点击「从文件导入」
-- 上传 `skills/` 目录下的 `.yaml` / `.json` 文件
+- 上传 `skills/weekly-digest.yaml`（首个 MVP Skill）
+- 若有其他 Skill，按依赖顺序逐一上传
+
+> **weekly-digest.yaml 关键依赖**：
+> - 模型：`ASTRONCLAW_DEFAULT_LLM`（建议讯飞星火 X1 / Spark Lite）
+> - 网络白名单：`export.arxiv.org` / `api.github.com` / `api.notion.com` / `*.feishu.cn` / `qyapi.weixin.qq.com`
+> - 调度：cron `0 9 * * 5`（每周五 09:00 Asia/Shanghai）
 
 ### 步骤 4：配置环境变量
 在 Skill 设置页面，将 `.env` 中的变量逐项填入「环境变量」面板。
